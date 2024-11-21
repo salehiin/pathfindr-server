@@ -30,6 +30,7 @@ async function run() {
 
     const packagesCollection = client.db("pathfindrDB").collection("packages");
     const guidesCollection = client.db("pathfindrDB").collection("guides");
+    const cartCollection = client.db("pathfindrDB").collection("carts");
 
     app.get('/packages', async(req, res) =>{
         const result = await packagesCollection.find().toArray();
@@ -39,6 +40,18 @@ async function run() {
     app.get('/guides', async(req, res) =>{
         const result = await guidesCollection.find().toArray();
         res.send(result);
+    })
+
+    // carts collection
+    app.get('/carts', async(req, res) =>{
+      const result = await cartCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.post('/carts', async(req, res) =>{
+      const cartItem = req.body;
+      const result = await cartCollection.insertOne(cartItem);
+      res.send(result);
     })
 
     // Send a ping to confirm a successful connection
