@@ -131,9 +131,40 @@ async function run() {
       res.send(result);
     })
 
+    // 
+    app.get('/packages/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await packagesCollection.findOne(query);
+      res.send(result);
+    })
+
     app.post('/packages', verifyToken, verifyAdmin, async (req, res) => {
       const item = req.body;
       const result = await packagesCollection.insertOne(item);
+      res.send(result);
+    })
+
+    // 
+    app.patch('/packages/:id', async (req, res) => {
+      const item = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) }
+      const updatedDoc = {
+        $set: {
+          tripTitle: item.tripTitle,
+          tourType: item.tourType,
+          location: item.location,
+          duration: item.duration,
+          groupSize: item.groupSize,
+          guideName: item.guideName,
+          cost: item.cost,
+          image: item.image,
+          highlights: item.highlights,
+          details: item.details
+        }
+      }
+      const result = await packagesCollection.updateOne(filter, updatedDoc)
       res.send(result);
     })
 
