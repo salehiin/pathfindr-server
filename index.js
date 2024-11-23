@@ -59,13 +59,13 @@ async function run() {
     }
 
     // use verify admin after verify token
-    const verifyAdmin = async(req, res, next) =>{
+    const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
-      const query = {email: email};
+      const query = { email: email };
       const user = await userCollection.findOne(query);
       const isAdmin = user?.role === 'admin';
-      if(!isAdmin){
-        return res.status(403).send({message: 'forbidden access'});
+      if (!isAdmin) {
+        return res.status(403).send({ message: 'forbidden access' });
       }
       next();
     }
@@ -131,9 +131,17 @@ async function run() {
       res.send(result);
     })
 
-    app.post('/packages', verifyToken, verifyAdmin, async(req, res) =>{
+    app.post('/packages', verifyToken, verifyAdmin, async (req, res) => {
       const item = req.body;
       const result = await packagesCollection.insertOne(item);
+      res.send(result);
+    })
+
+    // packages delete by admin
+    app.delete('/packages/:id', verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await packagesCollection.deleteOne(query);
       res.send(result);
     })
 
