@@ -43,7 +43,7 @@ async function run() {
 
     // middleware - verify token
     const verifyToken = (req, res, next) => {
-      console.log('inside verify token', req.headers.authorization);
+      // console.log('inside verify token', req.headers.authorization);
       if (!req.headers.authorization) {
         return res.status(401).send({ message: 'unauthorised access' });
       }
@@ -128,6 +128,12 @@ async function run() {
     // package/menu related api
     app.get('/packages', async (req, res) => {
       const result = await packagesCollection.find().toArray();
+      res.send(result);
+    })
+
+    app.post('/packages', verifyToken, verifyAdmin, async(req, res) =>{
+      const item = req.body;
+      const result = await packagesCollection.insertOne(item);
       res.send(result);
     })
 
