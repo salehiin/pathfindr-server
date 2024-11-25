@@ -28,7 +28,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const packagesCollection = client.db("pathfindrDB").collection("packages");
     const guidesCollection = client.db("pathfindrDB").collection("guides");
@@ -249,10 +249,84 @@ async function run() {
       // const query = {_id: new ObjectId(id)}
     })
 
+    // stats or analysis
+    app.get('/admin-stats', verifyToken, verifyAdmin, async(req, res) =>{
+      const users = await userCollection.estimatedDocumentCount();
+      const totalPackages = await packagesCollection.estimatedDocumentCount();
+      const totalGuides = await guidesCollection.estimatedDocumentCount();
+      const cartItems = await cartCollection.estimatedDocumentCount();
+      const totalPayments = await paymentCollection.estimatedDocumentCount();
+
+      // not the best way
+      // const payments = await paymentCollection.find().toArray();
+      // const revenue = payments.reduce((total, payment) => total + payment.price, 0);
+
+      // best way
+      const result = await paymentCollection.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalRevenue: {
+              $sum: '$price'
+            }
+          }
+        }
+      ]).toArray();
+
+      const revenue = result.length > 0 ? result[0].totalRevenue : 0;
+
+      res.send({
+        users,
+        totalPackages,
+        totalPayments,
+        totalGuides,
+        cartItems,
+        revenue
+      }) 
+    })
+
+    // booking/order status
+    // booking aggregate pipeline
+    app.get('/order-stats', verifyToken, verifyAdmin, async(req, res) =>{
+      const result = await paymentCollection.aggregate([
+        {
+          $unwind: '$tourItemId'
+        },
+        {
+          $lookup: {
+            from: 'packages',
+            localField: 'tourItemId',
+            foreignField: '_id',
+            as: 'tourItems'
+          }
+        },
+        {
+          $unwind: '$tourItems'
+        },
+        {
+          $group: {
+            _id: '$tourItems.tourType',
+            quantity: { $sum: 1},
+            revenue: {$sum: '$tourItems.price'}
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            tourType: '$_id',
+            quantity: '$quantity',
+            revenue: '$revenue'
+          }
+        }
+      ]).toArray();
+
+      res.send(result);
+
+    })
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
